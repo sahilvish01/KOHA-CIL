@@ -1,0 +1,47 @@
+# ---- Node ----
+node_modules/
+frontend/node_modules/
+security/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ---- Python ----
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.venv/
+backend/venv/
+backend/*.egg-info/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ---- Environment ----
+.env
+*.env.local
+
+# ---- Data directories (runtime, not committed) ----
+data/koha_cil.db
+data/cache/
+data/uploads/
+data/quarantine/
+data/chroma/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- IDE ----
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ---- Build ----
+/dist
+/build
