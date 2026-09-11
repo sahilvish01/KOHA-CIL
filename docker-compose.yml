@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: koha-cil-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/koha_cil.db
+      - UPLOAD_DIR=/app/data/uploads
+      - QUARANTINE_DIR=/app/data/quarantine
+      - CACHE_DIR=/app/data/cache
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3}
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-koha-cil-internal-shared-secret}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gateway:
+    build:
+      context: ./security
+      dockerfile: Dockerfile
+    container_name: koha-cil-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - JWT_SECRET=${JWT_SECRET:-koha-cil-dev-jwt-secret-change-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-8h}
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-koha-cil-internal-shared-secret}
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:5173}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: koha-cil-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+volumes:
+  koha_data:
+    driver: local
+
+networks:
+  default:
+    name: koha-cil-network
