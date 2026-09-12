@@ -268,7 +268,7 @@ function Login() {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
         <p className="text-[11px] text-[#8a9189] mt-[16px] leading-[1.6] text-center">
-          hq.admin · ccl.officer · secl.officer — password: demo123
+          hq.admin · ccl.officer · secl.officer · ecl.officer · mcl.officer — password: demo123
         </p>
       </form>
     </main>
