@@ -64,18 +64,51 @@ def get_quarantine_by_id(record_id: int) -> Optional[dict]:
 
 
 def review_quarantine(record_id: int, action: str, reviewer: str) -> bool:
-    """
-    Approve or reject a quarantine record.
-    
-    action must be 'APPROVED' or 'REJECTED'.
-    Returns True if the record was found and updated.
+    """Review a quarantined value and atomically apply approved production changes.
+
+    Rejections only resolve the quarantine item.  An approval updates the matching
+    trusted production record before marking the quarantine item approved, so a
+    failed/invalid synchronization cannot leave an approved but unapplied review.
     """
     valid_actions = {"APPROVED", "REJECTED"}
     if action not in valid_actions:
         raise ValueError(f"Invalid action '{action}'. Must be one of {valid_actions}")
 
     with get_db() as conn:
-        cursor = conn.execute(
+        record = conn.execute(
+            "SELECT * FROM quarantine_records WHERE id = ? AND status = 'PENDING_REVIEW'",
+            (record_id,),
+        ).fetchone()
+        if record is None:
+            return False
+
+        if action == "APPROVED":
+            if record["field_name"] != "production_mt":
+                raise ValueError(f"Unsupported approved field '{record['field_name']}'.")
+            if not all(record[key] for key in ("subsidiary", "financial_year", "mine_type")):
+                raise ValueError("Approved production conflict is missing its record identity.")
+            try:
+                incoming_production = float(record["incoming_value"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Approved incoming production value must be numeric.") from exc
+
+            cursor = conn.execute(
+                """
+                UPDATE production_statistics
+                SET production_mt = ?,
+                    achievement_percentage = CASE
+                        WHEN target_mt > 0 THEN ROUND(? / target_mt * 100, 2)
+                        ELSE 0
+                    END
+                WHERE subsidiary = ? AND financial_year = ? AND mine_type = ?
+                """,
+                (incoming_production, incoming_production, record["subsidiary"],
+                 record["financial_year"], record["mine_type"]),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("No trusted production record matched the approved conflict.")
+
+        conn.execute(
             """
             UPDATE quarantine_records
             SET status = ?, reviewed_by = ?, reviewed_at = datetime('now')
@@ -83,7 +116,7 @@ def review_quarantine(record_id: int, action: str, reviewer: str) -> bool:
             """,
             (action, reviewer, record_id),
         )
-        return cursor.rowcount > 0
+        return True
 
 
 def count_pending() -> int:

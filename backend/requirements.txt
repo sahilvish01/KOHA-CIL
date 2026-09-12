@@ -11,6 +11,9 @@ python-jose[cryptography]>=3.3.0
 # SQLite is built-in; PostgreSQL driver for enterprise deployment
 psycopg2-binary>=2.9.9
 
+# PDF text extraction
+pypdf>=4.2.0
+
 # File upload
 python-multipart>=0.0.9
 

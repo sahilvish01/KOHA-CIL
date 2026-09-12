@@ -454,7 +454,10 @@ async def review_conflict(
 ):
     """Approve or reject a quarantine record."""
     require_roles(user_ctx, UserRole.HQ_OFFICER, UserRole.ADMIN)
-    updated = quarantine_service.review_quarantine(record_id, body.action, user_ctx.username)
+    try:
+        updated = quarantine_service.review_quarantine(record_id, body.action, user_ctx.username)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not updated:
         raise HTTPException(status_code=404, detail="Record not found or already reviewed.")
 

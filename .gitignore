@@ -45,3 +45,4 @@ desktop.ini
 # ---- Build ----
 /dist
 /build
+*.tsbuildinfo
