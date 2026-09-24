@@ -22,6 +22,8 @@ backend/*.egg-info/
 
 # ---- Data directories (runtime, not committed) ----
 data/koha_cil.db
+data/koha_cil.db-wal 
+data/koha_cil.db-shm
 data/cache/
 data/uploads/
 data/quarantine/
